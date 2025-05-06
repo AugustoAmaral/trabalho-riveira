@@ -65,7 +65,7 @@ echo "Atualizando pip..."
 pip install --upgrade pip
 
 # Lista de pacotes necessários
-pacotes=("numpy" "pillow" "matplotlib")
+pacotes=("numpy" "pillow" "matplotlib" "opencv-python")
 
 # Instala cada pacote no ambiente virtual
 echo "Instalando dependências necessárias..."
