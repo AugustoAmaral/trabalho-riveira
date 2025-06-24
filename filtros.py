@@ -9,16 +9,6 @@ import numpy as np
 
 
 def criar_filtro_passa_baixa(forma, frequencia_corte):
-    """
-    Cria um filtro passa-baixa ideal (circular) no domínio da frequência.
-    
-    Parâmetros:
-    - forma: tupla com as dimensões da imagem (linhas, colunas)
-    - frequencia_corte: raio do filtro em pixels
-    
-    Retorna:
-    - mascara: array 2D com o filtro (1 dentro do raio, 0 fora)
-    """
     linhas, colunas = forma
     centro_linha, centro_coluna = linhas // 2, colunas // 2
     
@@ -36,16 +26,6 @@ def criar_filtro_passa_baixa(forma, frequencia_corte):
 
 
 def criar_filtro_passa_alta(forma, frequencia_corte):
-    """
-    Cria um filtro passa-alta ideal (circular) no domínio da frequência.
-    
-    Parâmetros:
-    - forma: tupla com as dimensões da imagem (linhas, colunas)
-    - frequencia_corte: raio do filtro em pixels
-    
-    Retorna:
-    - mascara_passa_alta: array 2D com o filtro (0 dentro do raio, 1 fora)
-    """
     mascara_passa_baixa = criar_filtro_passa_baixa(forma, frequencia_corte)
     mascara_passa_alta = 1 - mascara_passa_baixa
     
@@ -53,18 +33,6 @@ def criar_filtro_passa_alta(forma, frequencia_corte):
 
 
 def aplicar_filtro_frequencia(imagem, mascara_filtro):
-    """
-    Aplica um filtro no domínio da frequência usando transformada de Fourier.
-    
-    Parâmetros:
-    - imagem: array 2D da imagem em escala de cinza
-    - mascara_filtro: array 2D com o filtro a ser aplicado
-    
-    Retorna:
-    - imagem_filtrada: imagem filtrada normalizada para [0, 255]
-    - espectro_original: espectro de frequência original (para visualização)
-    - espectro_filtrado: espectro de frequência filtrado (para visualização)
-    """
     # Aplicar a transformada de Fourier
     f_shift = np.fft.fftshift(np.fft.fft2(imagem))
     
