@@ -57,6 +57,7 @@ class HandRecognitionSystem:
     def run_training_mode(self):
         """Modo de treino automático usando MediaPipe"""
         print("\n[MODO TREINO] Posicione suas mãos e pressione ESPAÇO para capturar")
+        print("Dica: Mantenha a mão estável e bem iluminada para melhor detecção")
         saved_count = 0
         
         while True:
@@ -83,10 +84,14 @@ class HandRecognitionSystem:
                 # Desenhar landmarks para visualização
                 self.detector.draw_landmarks(display_frame, detection['landmarks'])
             
-            # Mostrar estatísticas
+            # Mostrar estatísticas e instruções
             info_text = f"Modo Treino | Mãos: {len(detections)} | Salvos: {saved_count}"
             cv2.putText(display_frame, info_text, (10, 30), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            
+            # Instrução adicional
+            cv2.putText(display_frame, "Mantenha os dedos bem separados e esticados", (10, 60), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
             
             cv2.imshow('Hand Recognition System - Training Mode', display_frame)
             
@@ -108,6 +113,27 @@ class HandRecognitionSystem:
                     print(f"Salvo! Total de imagens: {saved_count}")
                 else:
                     print("Nenhuma mão detectada para salvar.")
+            elif key == ord('m') or key == ord('M'):  # M para ajuste manual
+                if detections:
+                    print("\nAjuste manual - Digite o número correto de dedos para cada mão:")
+                    for i, detection in enumerate(detections):
+                        while True:
+                            try:
+                                correct_fingers = int(input(f"Mão {i+1} (detectado {detection['fingers']}): "))
+                                if 0 <= correct_fingers <= 5:
+                                    detection['fingers'] = correct_fingers
+                                    break
+                                print("Digite um número entre 0 e 5")
+                            except ValueError:
+                                print("Digite um número válido")
+                        
+                        self.data_handler.save_training_image(
+                            frame,
+                            detection['box'],
+                            detection['fingers']
+                        )
+                        saved_count += 1
+                    print(f"Salvo com correções! Total: {saved_count}")
         
         print(f"\nModo treino finalizado. {saved_count} imagens salvas.")
         print("Execute novamente no modo normal para treinar o modelo com estas imagens.")

@@ -67,6 +67,7 @@ pip3 install -r requirements.txt
 
 ### Modo Treino Automático:
 - **ESPAÇO**: Salvar todas as detecções atuais
+- **M**: Modo correção manual - permite corrigir a contagem antes de salvar
 - **ESC**: Sair
 
 ### Modo Normal:

@@ -78,41 +78,107 @@ class HandDetector:
         return detections
     
     def _count_fingers(self, hand_landmarks, handedness):
-        """Conta dedos levantados usando landmarks do MediaPipe"""
+        """Conta dedos levantados usando landmarks do MediaPipe com lógica melhorada"""
         fingers_up = 0
         
-        # Pontos de referência dos dedos (tips e PIPs)
-        THUMB_TIP = 4
+        # Pontos de referência dos dedos
+        WRIST = 0
+        THUMB_CMC = 1
+        THUMB_MCP = 2
         THUMB_IP = 3
-        INDEX_TIP = 8
+        THUMB_TIP = 4
+        
+        INDEX_MCP = 5
         INDEX_PIP = 6
-        MIDDLE_TIP = 12
+        INDEX_DIP = 7
+        INDEX_TIP = 8
+        
+        MIDDLE_MCP = 9
         MIDDLE_PIP = 10
-        RING_TIP = 16
+        MIDDLE_DIP = 11
+        MIDDLE_TIP = 12
+        
+        RING_MCP = 13
         RING_PIP = 14
-        PINKY_TIP = 20
+        RING_DIP = 15
+        RING_TIP = 16
+        
+        PINKY_MCP = 17
         PINKY_PIP = 18
+        PINKY_DIP = 19
+        PINKY_TIP = 20
         
         landmarks = hand_landmarks.landmark
         
         # Verificar se é mão direita ou esquerda
         is_right_hand = handedness.classification[0].label == 'Right'
         
-        # Polegar - lógica diferente pois move lateralmente
+        # Calcular orientação da mão (palma virada para câmera ou não)
+        # Usando vetor do pulso para o meio da mão
+        wrist_to_middle = (
+            landmarks[MIDDLE_MCP].x - landmarks[WRIST].x,
+            landmarks[MIDDLE_MCP].y - landmarks[WRIST].y,
+            landmarks[MIDDLE_MCP].z - landmarks[WRIST].z
+        )
+        
+        # Se z é negativo, a palma está virada para a câmera
+        palm_facing_camera = wrist_to_middle[2] < 0
+        
+        # POLEGAR - lógica especial considerando movimento lateral
+        # Calcular distância entre ponta do polegar e base do indicador
+        thumb_to_index_base_x = abs(landmarks[THUMB_TIP].x - landmarks[INDEX_MCP].x)
+        thumb_to_index_base_y = abs(landmarks[THUMB_TIP].y - landmarks[INDEX_MCP].y)
+        
+        # Threshold adaptativo baseado no tamanho da mão
+        hand_scale = abs(landmarks[WRIST].y - landmarks[MIDDLE_TIP].y)
+        thumb_threshold = hand_scale * 0.3
+        
+        # Polegar levantado se estiver afastado lateralmente
         if is_right_hand:
-            if landmarks[THUMB_TIP].x > landmarks[THUMB_IP].x:
-                fingers_up += 1
+            if palm_facing_camera:
+                if landmarks[THUMB_TIP].x < landmarks[THUMB_IP].x - 0.02:
+                    fingers_up += 1
+            else:
+                if landmarks[THUMB_TIP].x > landmarks[THUMB_IP].x + 0.02:
+                    fingers_up += 1
         else:
-            if landmarks[THUMB_TIP].x < landmarks[THUMB_IP].x:
-                fingers_up += 1
+            if palm_facing_camera:
+                if landmarks[THUMB_TIP].x > landmarks[THUMB_IP].x + 0.02:
+                    fingers_up += 1
+            else:
+                if landmarks[THUMB_TIP].x < landmarks[THUMB_IP].x - 0.02:
+                    fingers_up += 1
         
-        # Outros dedos - verificar se a ponta está acima do PIP
-        finger_tips = [INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP]
-        finger_pips = [INDEX_PIP, MIDDLE_PIP, RING_PIP, PINKY_PIP]
+        # OUTROS DEDOS - verificar se estão estendidos
+        fingers = [
+            (INDEX_TIP, INDEX_DIP, INDEX_PIP, INDEX_MCP),
+            (MIDDLE_TIP, MIDDLE_DIP, MIDDLE_PIP, MIDDLE_MCP),
+            (RING_TIP, RING_DIP, RING_PIP, RING_MCP),
+            (PINKY_TIP, PINKY_DIP, PINKY_PIP, PINKY_MCP)
+        ]
         
-        for tip, pip in zip(finger_tips, finger_pips):
-            if landmarks[tip].y < landmarks[pip].y:  # Y cresce para baixo
-                fingers_up += 1
+        for tip, dip, pip, mcp in fingers:
+            # Calcular se o dedo está estendido usando múltiplos pontos
+            tip_y = landmarks[tip].y
+            dip_y = landmarks[dip].y
+            pip_y = landmarks[pip].y
+            mcp_y = landmarks[mcp].y
+            
+            # Verificar se o dedo está dobrado calculando ângulos
+            # Dedo levantado: ponta acima de todas as articulações
+            if palm_facing_camera:
+                # Palma para câmera - lógica normal
+                if tip_y < dip_y - 0.01 and dip_y < pip_y:
+                    fingers_up += 1
+            else:
+                # Dorso da mão para câmera - inverter lógica em alguns casos
+                # Mas ainda verificar se está estendido
+                finger_extended = (
+                    abs(tip_y - mcp_y) > hand_scale * 0.3 and
+                    tip_y < pip_y
+                )
+                if finger_extended:
+                    fingers_up += 1
         
         return fingers_up
     
