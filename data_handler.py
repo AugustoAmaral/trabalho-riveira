@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 class DataHandler:
-    def __init__(self, base_path="~/hand_dataset"):
+    def __init__(self, base_path="./hand_dataset"):
         self.dataset_path = Path(base_path).expanduser()
         self._setup_directories()
         
