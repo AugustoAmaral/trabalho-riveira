@@ -1,72 +1,57 @@
 import cv2
 import numpy as np
+import mediapipe as mp
 
 class HandDetector:
     def __init__(self):
-        self.min_area = 5000  # Área mínima para considerar uma mão
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=10,  # Detecta até 10 mãos
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.5
+        )
+        self.mp_drawing = mp.solutions.drawing_utils
         
     def detect_hands(self, frame, model_trainer):
         detections = []
         
-        # Converter para HSV para melhor detecção de pele
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        # Converter BGR para RGB (MediaPipe usa RGB)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(rgb_frame)
         
-        # Range de cor de pele em HSV
-        lower_skin = np.array([0, 20, 70], dtype=np.uint8)
-        upper_skin = np.array([20, 255, 255], dtype=np.uint8)
-        
-        # Criar máscara
-        mask = cv2.inRange(hsv, lower_skin, upper_skin)
-        
-        # Aplicar operações morfológicas
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
-        
-        # Encontrar contornos
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        for contour in contours:
-            area = cv2.contourArea(contour)
+        if results.multi_hand_landmarks:
+            h, w, _ = frame.shape
             
-            if area > self.min_area:
-                # Obter bounding box
-                x, y, w, h = cv2.boundingRect(contour)
+            for hand_landmarks in results.multi_hand_landmarks:
+                # Obter bounding box da mão
+                x_coords = [lm.x * w for lm in hand_landmarks.landmark]
+                y_coords = [lm.y * h for lm in hand_landmarks.landmark]
                 
-                # Adicionar margem
-                margin = 20
-                x1 = max(0, x - margin)
-                y1 = max(0, y - margin)
-                x2 = min(frame.shape[1], x + w + margin)
-                y2 = min(frame.shape[0], y + h + margin)
+                margin = 30
+                x1 = max(0, int(min(x_coords)) - margin)
+                y1 = max(0, int(min(y_coords)) - margin)
+                x2 = min(w, int(max(x_coords)) + margin)
+                y2 = min(h, int(max(y_coords)) + margin)
                 
-                # Classificar número de dedos
-                fingers, confidence = model_trainer.predict(frame, (x1, y1, x2, y2))
-                
-                if fingers is not None:
-                    detections.append(((x1, y1, x2, y2), fingers, confidence))
+                # Classificar número de dedos se modelo disponível
+                if model_trainer and model_trainer.model:
+                    fingers, confidence = model_trainer.predict(frame, (x1, y1, x2, y2))
+                    if fingers is not None:
+                        detections.append(((x1, y1, x2, y2), fingers, confidence))
+                else:
+                    # Se não há modelo, apenas detectar sem classificar
+                    detections.append(((x1, y1, x2, y2), -1, 0))
         
         return detections
     
-    def detect_hands_simple(self, frame):
-        """Versão simplificada para quando não há modelo treinado"""
-        detections = []
-        
-        # Mesma detecção de pele
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        lower_skin = np.array([0, 20, 70], dtype=np.uint8)
-        upper_skin = np.array([20, 255, 255], dtype=np.uint8)
-        mask = cv2.inRange(hsv, lower_skin, upper_skin)
-        
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-        
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > self.min_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                detections.append(((x, y, x+w, y+h), -1, 0))  # -1 indica sem classificação
-        
-        return detections
+    def get_hand_landmarks(self, frame):
+        """Retorna landmarks para análise mais detalhada se necessário"""
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(rgb_frame)
+        return results.multi_hand_landmarks
+    
+    def draw_landmarks(self, frame, hand_landmarks):
+        """Desenha os pontos da mão para debug"""
+        self.mp_drawing.draw_landmarks(
+            frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)

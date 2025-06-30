@@ -1,5 +1,7 @@
 # Sistema de Reconhecimento de Mãos
 
+Sistema modular para detecção de mãos e contagem de dedos usando MediaPipe para detecção e um classificador customizado para contagem.
+
 ## Instalação
 
 ```bash
@@ -12,8 +14,8 @@ pip3 install -r requirements.txt
 .
 ├── main.py              # Ponto de entrada
 ├── data_handler.py      # Gerencia dataset
-├── model_trainer.py     # Treina/carrega modelo
-├── hand_detector.py     # Detecta mãos no frame
+├── model_trainer.py     # Treina/carrega modelo de classificação
+├── hand_detector.py     # Detecta mãos usando MediaPipe
 ├── capture_manager.py   # Interface de captura
 └── hand_dataset/        # Diretório de imagens
     ├── 0_fingers/
@@ -24,27 +26,30 @@ pip3 install -r requirements.txt
     └── 5_fingers/
 ```
 
+## Como Funciona
+
+1. **Detecção**: MediaPipe detecta mãos com alta precisão
+2. **Classificação**: Modelo customizado conta os dedos nas regiões detectadas
+3. **Treinamento**: Você treina apenas o classificador de dedos (muito mais simples)
+
 ## Como Usar
 
 1. **Primeira execução**:
    ```bash
    python3 main.py
    ```
+   - O sistema já detectará mãos (retângulos laranjas)
+   - Mas não contará dedos até treinar
 
 2. **Capturar imagens para treinamento**:
-   - Pressione ESPAÇO para congelar o frame
+   - Pressione ESPAÇO quando uma mão estiver visível
    - Clique e arraste para selecionar a mão
    - Digite o número de dedos levantados (0-5)
-   - A imagem será salva automaticamente
 
-3. **Treinar o modelo**:
-   - Após coletar ~50-100 imagens
+3. **Treinar o classificador**:
+   - Com ~30-50 imagens já funciona bem
    - O programa perguntará se deseja treinar
-   - Responda 's' para treinar com as imagens existentes
-
-4. **Visualização em tempo real**:
-   - Após treinar, o programa detectará mãos automaticamente
-   - Mostrará retângulos verdes com contagem de dedos
+   - Após treinar, verá retângulos verdes com contagem
 
 ## Controles
 
@@ -52,9 +57,15 @@ pip3 install -r requirements.txt
 - **ESC**: Sair do programa
 - **Mouse**: Selecionar região da mão (durante captura)
 
-## Dicas
+## Dicas para Melhor Desempenho
 
-- Capture imagens com diferentes iluminações
-- Varie a distância e ângulo da mão
-- Inclua diferentes tons de pele se possível
-- Mínimo recomendado: 10 imagens por número de dedos
+- O MediaPipe já detecta mãos muito bem
+- Foque em capturar diferentes posições de dedos
+- 5-10 exemplos por número de dedos já é suficiente
+- Varie ângulos e distâncias
+
+## Indicadores Visuais
+
+- **Retângulo Laranja**: Mão detectada (sem classificação)
+- **Retângulo Verde**: Mão detectada com contagem de dedos
+- **Porcentagem**: Confiança da classificação

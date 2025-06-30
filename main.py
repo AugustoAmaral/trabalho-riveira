@@ -20,6 +20,11 @@ class HandRecognitionSystem:
     def initialize(self):
         existing_count = self.data_handler.count_existing_images()
         
+        # Tentar carregar modelo existente primeiro
+        if self.model_trainer.load_model():
+            print("Modelo existente carregado!")
+            self.model = self.model_trainer
+        
         if existing_count > 0:
             print(f"\nEncontradas {existing_count} imagens no dataset.")
             response = input("Deseja treinar novo modelo com estas imagens? (s/n): ")
@@ -30,7 +35,7 @@ class HandRecognitionSystem:
                 if self.model:
                     print("Modelo treinado com sucesso!")
                 else:
-                    print("Aviso: Modelo não pôde ser treinado. Continuando sem detecção.")
+                    print("Aviso: Modelo não pôde ser treinado. Continuando sem classificação de dedos.")
         
     def run(self):
         print("\nControles:")
@@ -45,15 +50,22 @@ class HandRecognitionSystem:
                 
             display_frame = frame.copy()
             
-            # Detectar e desenhar mãos se modelo disponível
-            if self.model:
-                detections = self.detector.detect_hands(frame, self.model)
-                for box, fingers, confidence in detections:
-                    x1, y1, x2, y2 = box
-                    cv2.rectangle(display_frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
+            # Detectar e desenhar mãos
+            detections = self.detector.detect_hands(frame, self.model)
+            for box, fingers, confidence in detections:
+                x1, y1, x2, y2 = box
+                
+                # Cor baseada em se há classificação ou não
+                if fingers >= 0:
+                    color = (0, 255, 0)  # Verde se classificado
                     label = f"{fingers} dedos ({confidence:.1%})"
-                    cv2.putText(display_frame, label, (x1, y1-10), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                else:
+                    color = (255, 165, 0)  # Laranja se apenas detectado
+                    label = "Mão detectada"
+                
+                cv2.rectangle(display_frame, (x1, y1), (x2, y2), color, 3)
+                cv2.putText(display_frame, label, (x1, y1-10), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
             
             cv2.imshow('Hand Recognition System', display_frame)
             
