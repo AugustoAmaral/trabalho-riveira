@@ -26,46 +26,63 @@ pip3 install -r requirements.txt
     └── 5_fingers/
 ```
 
-## Como Funciona
+## Modos de Execução
 
-1. **Detecção**: MediaPipe detecta mãos com alta precisão
-2. **Classificação**: Modelo customizado conta os dedos nas regiões detectadas
-3. **Treinamento**: Você treina apenas o classificador de dedos (muito mais simples)
+### 1. Modo Treino Automático (NOVO!)
+- MediaPipe detecta e conta dedos automaticamente
+- Pressione ESPAÇO para salvar todas as mãos detectadas
+- Gera dataset rapidamente sem entrada manual
+- Mostra landmarks da mão para verificação visual
+
+### 2. Modo Normal
+- Usa modelo treinado para classificação
+- Permite captura manual com seleção de região
+- Mostra detecções em tempo real
 
 ## Como Usar
 
-1. **Primeira execução**:
+### Gerando Dataset Rapidamente:
+
+1. Execute e escolha modo 2:
    ```bash
    python3 main.py
+   > Escolha (1 ou 2): 2
    ```
-   - O sistema já detectará mãos (retângulos laranjas)
-   - Mas não contará dedos até treinar
 
-2. **Capturar imagens para treinamento**:
-   - Pressione ESPAÇO quando uma mão estiver visível
-   - Clique e arraste para selecionar a mão
-   - Digite o número de dedos levantados (0-5)
+2. Posicione suas mãos mostrando diferentes números de dedos
 
-3. **Treinar o classificador**:
-   - Com ~30-50 imagens já funciona bem
-   - O programa perguntará se deseja treinar
-   - Após treinar, verá retângulos verdes com contagem
+3. Pressione ESPAÇO quando a detecção estiver correta
+   - Salva automaticamente com a contagem do MediaPipe
+   - Pode ter múltiplas mãos no frame
+
+4. Gere 50-100 imagens em poucos minutos!
+
+### Treinando o Modelo:
+
+1. Execute novamente e escolha modo 1
+2. O sistema perguntará se deseja treinar com as imagens
+3. Responda 's' para treinar
 
 ## Controles
 
-- **ESPAÇO**: Capturar frame para treinamento
-- **ESC**: Sair do programa
-- **Mouse**: Selecionar região da mão (durante captura)
+### Modo Treino Automático:
+- **ESPAÇO**: Salvar todas as detecções atuais
+- **ESC**: Sair
 
-## Dicas para Melhor Desempenho
-
-- O MediaPipe já detecta mãos muito bem
-- Foque em capturar diferentes posições de dedos
-- 5-10 exemplos por número de dedos já é suficiente
-- Varie ângulos e distâncias
+### Modo Normal:
+- **ESPAÇO**: Captura manual (selecionar com mouse)
+- **ESC**: Sair
 
 ## Indicadores Visuais
 
-- **Retângulo Laranja**: Mão detectada (sem classificação)
-- **Retângulo Verde**: Mão detectada com contagem de dedos
-- **Porcentagem**: Confiança da classificação
+- **Retângulo Amarelo**: Detecção MediaPipe (modo treino)
+- **Retângulo Laranja**: Mão detectada sem classificação
+- **Retângulo Verde**: Mão com classificação do modelo
+- **Landmarks**: Pontos da mão (modo treino)
+
+## Dicas
+
+- No modo treino, verifique se a contagem está correta antes de salvar
+- Varie posições, ângulos e distâncias
+- O MediaPipe é muito preciso, mas verifique visualmente
+- Com 10-20 capturas (ESPAÇO) você já tem um bom dataset
